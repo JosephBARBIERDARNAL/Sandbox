@@ -1,15 +1,5 @@
 
 
-# library(tidyverse)
-# library(ggtext)
-# library(here)
-# library(tidytext)
-# library(textstem)
-# library(udpipe)
-# library(ggdist)
-# library(glue)
-# library(patchwork)
-
 #base_path <- here::here("2022", "27")
 
 #tuesdata <- tidytuesdayR::tt_load(2022, week = 27)
@@ -64,6 +54,17 @@
 
 # load
 rm(list=ls())
+
+library(tidyverse)
+library(ggtext)
+library(here)
+library(tidytext)
+library(textstem)
+library(udpipe)
+library(ggdist)
+library(glue)
+library(patchwork)
+
 df_plot <- read_csv("df_plot.csv")
 rent <- read_csv("rent.csv")
 rent_title_words = read_csv("rent_title_words.csv")
@@ -134,7 +135,7 @@ p <- df_plot %>%
   theme(
     plot.background = element_rect(color = NA, fill = bg_color),
     panel.grid = element_blank(),
-    panel.grid.major.x = element_line(size = 0.1, color = "grey75"),
+    panel.grid.major.x = element_line(linewidth = 0.1, color = "grey75"),
     plot.title = element_text(family = "Fira Sans SemiBold"),
     plot.title.position = "plot",
     plot.subtitle = element_textbox_simple(
