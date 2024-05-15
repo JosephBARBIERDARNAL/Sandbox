@@ -1,0 +1,4 @@
+venv/
+*.sh
+
+chatgpt-chat.ipynb
