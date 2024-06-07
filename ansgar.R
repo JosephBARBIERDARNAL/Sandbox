@@ -1,68 +1,65 @@
 library(tidyverse)
-library(ggtext)
-library(waffle)
+library(countrycode)
+library(rdbnomics)
+library(ggbump)
+library(MetBrewer)
+library(scales)
 
-df_raw <- read_tsv("../R-graph-gallery/DATA/sdg_07_40_tabular.tsv", na = ":")
+allcty <- codelist |> filter(!is.na(eu28)) |> pull(iso3c) |> tolower()
 
-# let's clean a bit the data
-df_2020 <- df_raw %>%
-  rename(X1 = 1) %>% 
-  mutate(countrycode = str_match(X1, "(?:.+?,){3}(.{2})")[, 2]) %>% 
-  select(countrycode, share_renewable = `2020`) %>% 
-  mutate(country = countrycode::countrycode(countrycode, origin = "eurostat", destination = "country.name")) %>% 
-  na.omit()
+gfcf_private <- rdb(provider_code = "AMECO", dataset_code = "UIGP", 
+             dimensions = list(geo = allcty, unit = "mrd-ecu-eur"))
+gdp <- rdb(provider_code = "AMECO", dataset_code = "UVGD",
+           dimensions = list(geo = allcty, unit = "mrd-ecu-eur"))
 
-eu_countries <- c("BE", "BG", "CZ", "DK", "DE", "EE", "IE", "EL", "ES", 
-                  "FR", "HR", "IT", "CY", "LV", "LT", "LU", "HU", "MT", 
-                  "NL", "AT", "PL", "PT", "RO", "SI", "SK", "FI", "SE")
+data <- bind_rows(gfcf_private, gdp) |> 
+  mutate(variable = case_when(
+    str_detect(dataset_name, "private") ~ "GFCF_p",
+    TRUE ~ "GDP")) |> 
+  select(geo, variable, period, value) |> 
+  pivot_wider(names_from = variable, values_from = value) |> 
+  mutate(share_p = GFCF_p/GDP*100, year = year(period), geo = toupper(geo))
 
-plot_labs <- labs(
-  title = glue::glue("Share of
-    <span style='color:{colorspace::darken(\"#77C3C2\", 0.2)}'>renewable energy</span> 
-                       in gross final energy consumption (2020)"),
-  subtitle = "The indicator measures the share of renewable energy consumption 
-    in gross final energy consumption. 
-    The gross final energy consumption is the energy used by end-consumers 
-    (final energy consumption) plus grid losses and self-consumption of power plants.",
-  caption = "**Source:** European Environment Agency (EEA) | **Visualization:** Ansgar Wolsing"
-)
+ranked <- data |> 
+  filter(year %in% c(2000, 2010, 2020)) |> 
+  mutate(ranking = rank(desc(share_p), ties.method = "first"), .by = year) |> 
+  mutate(ctry = countrycode(geo, "iso3c", "country.name.de"),
+         ctry = ifelse(geo == "CZE", "Tschechien", ctry))
 
-theme_set(theme_minimal(base_family = "Helvetica Neue"))
-theme_update(
-  plot.background = element_rect(color = NA, fill = "white"),
-  axis.text = element_blank(),
-  panel.grid = element_blank(),
-  text = element_text(color = "grey38"),
-  plot.title = element_markdown(color = "grey4", family = "Oswald", size = 14),
-  plot.subtitle = element_textbox_simple(
-    lineheight = 1.1, size = 9,
-    margin = margin(t = 8, b = 6)
-  ),
-  plot.caption = element_markdown(hjust = 0, color = "grey46", size = 8),
-  strip.text = element_markdown(hjust = 0, lineheight = 1.2, size = 8,
-                                margin = margin(t = 8, b = 2, l = 2))
-)
+selected <- c("AUT", "DEU", "IRL", "FRA")
 
-df_2020_waffle <- df_2020 %>% 
-  filter(countrycode %in% eu_countries) %>% 
-  mutate(share_renewable_precise = share_renewable,
-         share_renewable = round(share_renewable),
-         share_other = 100 - share_renewable) %>% 
-  pivot_longer(cols = c(share_renewable, share_other), names_pattern = "share_(.+)") %>% 
-  mutate(name = factor(name, levels = c("renewable", "other")))
+ranked |>
+  ggplot(aes(x = year, y = ranking, group = geo)) +
+  geom_bump(linewidth = 0.6, color = "gray90", smooth = 6) +
+  geom_bump(aes(color = geo), linewidth = 0.8, smooth = 6,
+                    data = ~. |> filter(geo %in% selected)) +
+  geom_point(color = "white", size = 4) +
+  geom_point(color = "gray90", size = 2) +
+  geom_point(aes(color = geo), size = 2, 
+             data = ~. |> filter(geo %in% selected)) +
+  geom_text(aes(label = ctry), x = 2021, hjust = 0,
+            color = "gray50", family = "Roboto Condensed", size = 3.5,
+            data = ranked |> slice_max(year, by = geo) |> 
+              filter(!geo %in% selected)) +
+  geom_text(aes(label = ctry), x = 2021, hjust = 0,
+            color = "black", family = "Roboto Condensed", size = 3.5,
+            data = ranked |> slice_max(year, by = geo) |> 
+              filter(geo %in% selected)) +
+  scale_color_manual(values = met.brewer("Juarez")) +
+  scale_x_continuous(limits = c(1999.8, 2027), expand = c(0.01,0),
+                     breaks = c(2000, 2010, 2020)) +
+  scale_y_reverse(breaks = c(25,20,15,10,5,1), expand = c(0.02,0),
+                  labels = number_format(suffix = ".")) +
+  labs(x = NULL, y = NULL,
+       title = toupper("Investitionstätigkeit in der EU"),
+       subtitle = "Ranking nach Bruttoanlageinvestitionen in % des BIP",
+       caption = "Anm.: Investionen des privaten Sektors. Daten: AMECO Grafik: @matschnetzer") +
+  theme_minimal(base_family = "Roboto Condensed", base_size = 12) +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title.position = "plot",
+        plot.title = element_text(size = 14, hjust = .5),
+        plot.subtitle = element_text(size = 10, hjust = .5),
+        plot.caption = element_text(size = 8))
 
-df_2020_waffle %>% 
-  mutate(
-    share_fmt = sprintf("%.1f", share_renewable_precise),
-    label = glue::glue("**{country}**<br>{share_fmt} %"),
-    label = fct_reorder(label, -share_renewable_precise)) %>%
-  ggplot(aes(fill = name, values = value)) +
-  geom_waffle(n_rows = 10, cols = 100, size = 0.2, colour = "white", flip = TRUE,
-              show.legend = FALSE) +
-  scale_fill_manual(name = NULL,
-                    values = c("#77C3C2", "grey87")) +
-  coord_fixed() +
-  facet_wrap(vars(label)) +
-  plot_labs +
-  theme(axis.title = element_blank())
-
+ggsave("gfcf.png", width = 4, height = 8, dpi = 320, bg = "white")

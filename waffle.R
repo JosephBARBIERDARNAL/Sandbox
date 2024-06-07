@@ -1,17 +1,23 @@
-library(ggraph)
-library(igraph)
-library(tidyverse)
-library(dplyr)
-library(dendextend)
-library(colormap)
+library(rayshader)
+library(terra)
+# Define a region for the SRTM data (example: Swiss Alps)
+extent_alps <- extent(7.0, 9.0, 46.0, 47.5)
 
-data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyUndirecterWeighted.csv", header=T, row.names="Cities.", sep=",")# %>% as.matrix
-colnames(data) <- gsub("\\.", " ", colnames(data))
-data <- as.data.frame(data)
-str(data)
-str(data)
-head(data)
+# Download SRTM data
+srtm_alps <- getData("SRTM", lon = 8.0, lat = 46.75)
 
-dend <- as.dist(data) %>%
-  hclust(method="ward.D") %>%
-  as.dendrogram()
+# Crop the SRTM data to the defined extent
+srtm_alps_cropped <- crop(srtm_alps, extent_alps)
+
+# Convert the raster data to matrix
+elevation_matrix <- raster_to_matrix(srtm_alps_cropped)
+
+
+
+elevation_matrix %>%
+  sphere_shade(texture="desert", sunangle = 45) %>%
+  add_water(detect_water(elevation_matrix)) %>%
+  add_shadow(ray_shade(elevation_matrix), 0.5) %>% # this line adds a shadow
+  add_shadow(ambient_shade(elevation_matrix), 0) %>% # this line adds an ambient shadow
+  plot_3d(elevation_matrix, zscale = 50)
+render_snapshot()

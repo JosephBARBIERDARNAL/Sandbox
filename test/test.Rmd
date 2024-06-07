@@ -1,0 +1,14 @@
+---
+title: "totot"
+format: html
+---
+
+
+# toto
+
+![](../img/waffle.png)
+
+
+```{r}
+print("toto")
+```

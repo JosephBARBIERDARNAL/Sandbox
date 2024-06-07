@@ -1,0 +1,14 @@
+---
+title: "totot"
+format: html
+---
+
+
+# toto
+
+![](/Users/josephbarbier/Desktop/SANDBOX/img/waffle.png)
+
+
+```{r}
+print(getwd())
+```
