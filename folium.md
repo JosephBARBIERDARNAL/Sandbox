@@ -1,30 +1,28 @@
-
 👋 Hi!
 
-Interactive and dynamic charts can be intimidating, but they shouldn’t.
+Interactive and dynamic charts can be intimidating, but they shouldn't be.
 
-In today’s world, there are so many people that work hard to create open source and free amazing tools, and interactive charts are not an exception!
-​
+In today's world, many people work hard to create amazing open-source and free tools, and interactive charts are no exception!
+
 ## Folium: dynamic maps made easy
 
-Folium is a python library based on Leaflet. Since Leaflet was built using JavaScript (JS), it’s natively interactive and its developers have made it very easy to create maps similar to what Google Maps look like.
-​​
+Folium is a Python library based on Leaflet. Since Leaflet was built using JavaScript (JS), it's natively interactive, and its developers have made it very easy to create maps similar to what Google Maps looks like.
 
-Folium developers took this JS library and wrapped it around some Python code so that you just need to do a little bit of Python to create incredible maps!
+Folium developers took this JS library and wrapped it with Python code so that you only need to write a little Python to create incredible maps!
 
 ## In practice
 
-Check this code sample:
+Check out this code sample:
 
 ```python
 import folium
 my_map = folium.Map()
 my_map
 ```
-​
-If you run this in a jupyter notebook, this is only what you need to create your very first folium map!
 
-You can also easily save the map in HTML format:
+If you run this in a Jupyter notebook, that's all you need to create your very first Folium map!
+
+You can also easily save the map in HTML format and place it anywhere you like (your portfolio, a dedicated website, etc).
 
 ```python
 my_map.save("map.html")
@@ -32,16 +30,14 @@ my_map.save("map.html")
 
 ## Advanced use case
 
-Even though the library has a light-weight syntax, you have access to a high customization level! Here what you can do in 30 lines of code:
+Even though the library has lightweight syntax, you have access to a high level of customization! Here's what you can do in 30 lines of code:
 
-<center><b>VIDEO OF MAP WITH EARTHQUAKES</b></center>
+[Video of map with earthquakes would be inserted here]
 
-<b>BUTTON TO GO TO SEE CODE</b>
+[Button to view code would be inserted here]
 
-And if you want to learn more about folium, check the section in the [Python graph gallery]()
+If you want to learn more about Folium, check out the section in the [Python Graph Gallery]().
 
 See you tomorrow with a new tip!
-​
 
 Yan
-
