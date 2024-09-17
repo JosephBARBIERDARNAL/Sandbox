@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Python + Matplotlib in Browser</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.0/full/pyodide.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        height: 100vh;
+      }
+      .left-panel,
+      .right-panel {
+        flex: 1;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      .left-panel {
+        border-right: 1px solid #ccc;
+      }
+      #output {
+        background-color: #f9f9f9;
+        padding: 10px;
+        border: 1px solid #ccc;
+      }
+      .CodeMirror {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="left-panel">
+      <textarea id="code" name="code">
+import matplotlib.pyplot as plt
+import numpy as np
+
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+plt.plot(x, y)
+plt.title('Sine Wave')
+plt.show()
+        </textarea
+      >
+      <button onclick="runPythonCode()">Run Code</button>
+    </div>
+
+    <div class="right-panel">
+      <div id="output">Your Matplotlib chart will appear here</div>
+    </div>
+
+    <script>
+      // Initialize CodeMirror for code editing
+      const codeEditor = CodeMirror.fromTextArea(
+        document.getElementById("code"),
+        {
+          mode: "python",
+          lineNumbers: true,
+          theme: "default",
+        }
+      );
+
+      // Load Pyodide and setup Python execution environment
+      async function loadPyodideAndPackages() {
+        let pyodide = await loadPyodide();
+        await pyodide.loadPackage(["matplotlib", "numpy"]);
+        return pyodide;
+      }
+
+      let pyodideReadyPromise = loadPyodideAndPackages();
+
+      async function runPythonCode() {
+        let pyodide = await pyodideReadyPromise;
+        let code = codeEditor.getValue();
+
+        try {
+          // Redirect Matplotlib's output to a canvas element
+          const outputDiv = document.getElementById("output");
+          outputDiv.innerHTML = ""; // Clear previous output
+
+          pyodide.runPython(`
+import matplotlib.pyplot as plt
+from js import document
+plt.switch_backend('Agg')  # Use non-interactive backend
+
+def render_fig():
+    import io
+    from base64 import b64encode
+    figfile = io.BytesIO()
+    plt.savefig(figfile, format='png')
+    figfile.seek(0)
+    data = b64encode(figfile.read()).decode('ascii')
+    document.getElementById('output').innerHTML = f'<img src="data:image/png;base64,{data}" />'
+`);
+
+          // Execute user code and render chart
+          pyodide.runPython(code);
+          pyodide.runPython("render_fig()");
+        } catch (error) {
+          document.getElementById("output").innerText = error;
+        }
+      }
+    </script>
+  </body>
+</html>
